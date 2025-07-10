@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Demo of WeedCrawler's cannabis store map with dark/light mode support">
+    <meta name="theme-color" content="#4CAF50">
+    <title>WeedCrawler Store Map - Dark/Light Mode Demo</title>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s ease;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .demo-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .demo-header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .demo-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .demo-btn {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .demo-btn:hover {
+            background: #45a049;
+        }
+        
+        .demo-btn.secondary {
+            background: #2196F3;
+        }
+        
+        .demo-btn.secondary:hover {
+            background: #1976D2;
+        }
+        
+        .demo-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .demo-info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .demo-info ul {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        #map-container {
+            width: 100%;
+            height: 600px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .theme-info {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .theme-info .current-theme {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🌿 WeedCrawler Store Map</h1>
+            <p>Interactive cannabis store locator with dark and light mode support</p>
+        </div>
+        
+        <div class="demo-info">
+            <h3>Features:</h3>
+            <ul>
+                <li><strong>Dark/Light Mode:</strong> Toggle between themes using the button in the map controls</li>
+                <li><strong>Theme-aware styling:</strong> All UI elements adapt to the selected theme</li>
+                <li><strong>Dark map tiles:</strong> Uses CartoDB dark tiles for dark mode</li>
+                <li><strong>Programmatic control:</strong> Use the buttons below to test theme switching</li>
+                <li><strong>Persistent theme:</strong> Theme state is maintained during the session</li>
+            </ul>
+        </div>
+        
+        <div class="demo-controls">
+            <button class="demo-btn" onclick="setLightMode()">🌞 Set Light Mode</button>
+            <button class="demo-btn" onclick="setDarkMode()">🌙 Set Dark Mode</button>
+            <button class="demo-btn secondary" onclick="toggleTheme()">🔄 Toggle Theme</button>
+            <button class="demo-btn secondary" onclick="showCurrentTheme()">ℹ️ Show Current Theme</button>
+        </div>
+        
+        <div id="map-container"></div>
+        
+        <div class="theme-info">
+            <p>Current theme: <span class="current-theme" id="current-theme">Light</span></p>
+        </div>
+    </div>
+    
+    <script src="cannabis-store-map.1.0.0.js"></script>
+    <script>
+        let mapInstance;
+        
+        // Initialize the map
+        function initMap() {
+            mapInstance = CannabisStoreMap.createFromAPI(
+                'map-container',
+                'https://api.weedcrawler.ca/map/3f84ee30001a0a00f99945627b604bab0383abee5232f732',
+                {
+                    title: 'Cannabis Store Locator',
+                    height: '100%',
+                    zoom: 6,
+                    provinces: ['ON'],
+                    theme: 'light',
+                    showThemeToggle: true
+                }
+            );
+            
+            // Update theme display after a short delay to ensure map is loaded
+            setTimeout(updateThemeDisplay, 1000);
+        }
+        
+        // Theme control functions
+        function setLightMode() {
+            if (mapInstance) {
+                mapInstance.setTheme('light');
+                updateThemeDisplay();
+            }
+        }
+        
+        function setDarkMode() {
+            if (mapInstance) {
+                mapInstance.setTheme('dark');
+                updateThemeDisplay();
+            }
+        }
+        
+        function toggleTheme() {
+            if (mapInstance) {
+                mapInstance.toggleTheme();
+                updateThemeDisplay();
+            }
+        }
+        
+        function showCurrentTheme() {
+            if (mapInstance) {
+                const theme = mapInstance.getTheme();
+                alert(`Current theme: ${theme}`);
+                updateThemeDisplay();
+            }
+        }
+        
+        function updateThemeDisplay() {
+            if (mapInstance) {
+                const theme = mapInstance.getTheme();
+                const themeElement = document.getElementById('current-theme');
+                if (themeElement) {
+                    themeElement.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+                }
+            }
+        }
+        
+        // Initialize map when page loads
+        window.addEventListener('load', initMap);
+        
+        // Update theme display periodically
+        setInterval(updateThemeDisplay, 2000);
+    </script>
+</body>
+</html> 
