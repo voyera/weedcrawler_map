@@ -78,6 +78,38 @@
         return langDict[key] || translations.en[key] || key;
     }
     
+    // Check if Leaflet is loaded, if not, load it
+    function loadLeaflet(callback) {
+        if (typeof L !== 'undefined') {
+            callback();
+            return;
+        }
+        
+        // Load Leaflet CSS
+        const leafletCSS = document.createElement('link');
+        leafletCSS.rel = 'stylesheet';
+        leafletCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';
+        document.head.appendChild(leafletCSS);
+        
+        // Load Leaflet JS
+        const leafletJS = document.createElement('script');
+        leafletJS.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
+        leafletJS.onload = callback;
+        document.head.appendChild(leafletJS);
+    }
+    
+    // Load Font Awesome if not already loaded
+    function loadFontAwesome() {
+        if (document.querySelector('link[href*="font-awesome"]')) {
+            return; // Already loaded
+        }
+        
+        const fontAwesome = document.createElement('link');
+        fontAwesome.rel = 'stylesheet';
+        fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+        document.head.appendChild(fontAwesome);
+    }
+    
     // Inject required CSS
     function injectCSS() {
         const css = `
