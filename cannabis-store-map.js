@@ -6,11 +6,77 @@
  * 1. Include this script in your HTML
  * 2. Call: CannabisStoreMap.create('container-id', storesData, options)
  * 
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 (function(window, document) {
     'use strict';
+    
+    // Translation dictionaries
+    const translations = {
+        en: {
+            // UI Controls
+            searchPlaceholder: 'Search stores by name...',
+            searchButton: 'Search',
+            clearButton: 'Clear',
+            locateButton: 'Find My Location',
+            lightMode: 'Light Mode',
+            darkMode: 'Dark Mode',
+            
+            // Store information
+            storesFound: 'stores found',
+            filteredBy: 'filtered by',
+            productsAvailable: 'products available',
+            moreProducts: 'more products',
+            visitStore: 'Visit Store',
+            yourLocation: 'Your Location',
+            
+            // Loading and error messages
+            loadingMap: 'Loading map...',
+            locationError: 'Unable to get your location: ',
+            geolocationNotSupported: 'Geolocation is not supported by this browser.',
+            failedToLoadData: 'Failed to load store data. Please try again later.',
+            
+            // Default titles
+            defaultTitle: 'Store Locator',
+            poweredBy: 'Powered by',
+            weedCrawlerTitle: 'Weed Crawler - Cannabis Data Provider'
+        },
+        fr: {
+            // UI Controls
+            searchPlaceholder: 'Rechercher des magasins par nom...',
+            searchButton: 'Rechercher',
+            clearButton: 'Effacer',
+            locateButton: 'Trouver ma position',
+            lightMode: 'Mode clair',
+            darkMode: 'Mode sombre',
+            
+            // Store information
+            storesFound: 'magasins trouvés',
+            filteredBy: 'filtré par',
+            productsAvailable: 'produits disponibles',
+            moreProducts: 'produits supplémentaires',
+            visitStore: 'Visiter le magasin',
+            yourLocation: 'Votre position',
+            
+            // Loading and error messages
+            loadingMap: 'Chargement de la carte...',
+            locationError: 'Impossible d\'obtenir votre position : ',
+            geolocationNotSupported: 'La géolocalisation n\'est pas prise en charge par ce navigateur.',
+            failedToLoadData: 'Échec du chargement des données. Veuillez réessayer plus tard.',
+            
+            // Default titles
+            defaultTitle: 'Localisateur de magasins',
+            poweredBy: 'Propulsé par',
+            weedCrawlerTitle: 'Weed Crawler - Fournisseur de données sur le cannabis'
+        }
+    };
+    
+    // Helper function to get translation
+    function t(lang, key) {
+        const langDict = translations[lang] || translations.en;
+        return langDict[key] || translations.en[key] || key;
+    }
     
     // Check if Leaflet is loaded, if not, load it
     function loadLeaflet(callback) {
@@ -337,12 +403,13 @@
                 maxZoom: 18,
                 showControls: true,
                 showTitle: true,
-                title: 'Store Locator',
+                title: options.title || t(options.language || 'en', 'defaultTitle'),
                 height: '600px',
                 showAttribution: true,
                 provinces: [], // Array of province codes to filter by (e.g., ['BC', 'ON'])
                 theme: 'light', // 'light' or 'dark'
                 showThemeToggle: true, // Show theme toggle button
+                language: 'en', // 'en' or 'fr'
                 ...options
             };
             
@@ -362,6 +429,10 @@
         }
         
         init() {
+            // Load dependencies
+            loadFontAwesome();
+            injectCSS();
+            
             this.createHTML();
             this.loadLeafletAndInit();
         }
@@ -370,16 +441,16 @@
             const themeToggleHTML = this.options.showThemeToggle ? `
                 <button id="${this.uniqueId}_themeBtn" class="btn btn-theme">
                     <i class="fa-solid fa-${this.currentTheme === 'dark' ? 'sun' : 'moon'}"></i>
-                    ${this.currentTheme === 'dark' ? 'Light' : 'Dark'} Mode
+                    ${t(this.options.language, this.currentTheme === 'dark' ? 'lightMode' : 'darkMode')}
                 </button>
             ` : '';
             
             const controlsHTML = this.options.showControls ? `
                 <div class="map-controls">
-                    <input type="text" id="${this.uniqueId}_search" class="search-input" placeholder="Search stores by name...">
-                    <button id="${this.uniqueId}_searchBtn" class="btn">Search</button>
-                    <button id="${this.uniqueId}_clearBtn" class="btn btn-secondary">Clear</button>
-                    <button id="${this.uniqueId}_locateBtn" class="btn btn-secondary">Find My Location</button>
+                    <input type="text" id="${this.uniqueId}_search" class="search-input" placeholder="${t(this.options.language, 'searchPlaceholder')}">
+                    <button id="${this.uniqueId}_searchBtn" class="btn">${t(this.options.language, 'searchButton')}</button>
+                    <button id="${this.uniqueId}_clearBtn" class="btn btn-secondary">${t(this.options.language, 'clearButton')}</button>
+                    <button id="${this.uniqueId}_locateBtn" class="btn btn-secondary">${t(this.options.language, 'locateButton')}</button>
                     ${themeToggleHTML}
                     <span id="${this.uniqueId}_count" class="store-count"></span>
                 </div>
@@ -389,7 +460,7 @@
             
             const attributionHTML = this.options.showAttribution ? `
                 <div class="powered-by">
-                    Powered by <a href="https://weedcrawler.ca" target="_blank" rel="noopener">Weed Crawler - Cannabis Data Provider</a>
+                    ${t(this.options.language, 'poweredBy')} <a href="https://weedcrawler.ca" target="_blank" rel="noopener">${t(this.options.language, 'weedCrawlerTitle')}</a>
                 </div>
             ` : '';
             
@@ -398,7 +469,7 @@
                     ${titleHTML}
                     ${controlsHTML}
                     <div id="${this.uniqueId}_map" class="map-container" style="height: ${this.options.height};">
-                        <div class="loading">Loading map...</div>
+                        <div class="loading">${t(this.options.language, 'loadingMap')}</div>
                     </div>
                     ${attributionHTML}
                 </div>
@@ -504,9 +575,9 @@
             const themeBtn = document.getElementById(this.uniqueId + '_themeBtn');
             if (themeBtn) {
                 if (this.currentTheme === 'dark') {
-                    themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i> Light Mode';
+                    themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i> ' + t(this.options.language, 'lightMode');
                 } else {
-                    themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i> Dark Mode';
+                    themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i> ' + t(this.options.language, 'darkMode');
                 }
             }
             
@@ -619,7 +690,7 @@
                 popupHTML += `
                     <div style="margin-bottom: 12px;">
                         <div style="font-size: 12px; color: var(--csm-link-color); font-weight: bold; margin-bottom: 6px;">
-                            ${store.products.length} products available
+                            ${store.products.length} ${t(this.options.language, 'productsAvailable')}
                         </div>
                         <div class="products-preview" style="max-height: 120px; overflow-y: auto; overflow-x: hidden; border-top: 1px solid var(--csm-popup-border); padding-top: 6px; width: 100%;">
                 `;
@@ -652,7 +723,7 @@
                 if (store.products.length > 3) {
                     popupHTML += `
                         <div style="font-size: 10px; color: var(--csm-link-color); font-style: italic; margin-top: 4px;">
-                            +${store.products.length - 3} more products
+                            +${store.products.length - 3} ${t(this.options.language, 'moreProducts')}
                         </div>
                     `;
                 }
@@ -665,7 +736,7 @@
             
             // Add store link
             if (store.url) {
-                popupHTML += `<a href="${store.url}" target="_blank" class="popup-link">Visit Store</a>`;
+                popupHTML += `<a href="${store.url}" target="_blank" class="popup-link">${t(this.options.language, 'visitStore')}</a>`;
             }
             
             popupHTML += `</div>`;
@@ -742,8 +813,8 @@
         updateStoreCount(count, searchTerm = '') {
             const countElement = document.getElementById(this.uniqueId + '_count');
             if (countElement) {
-                const searchText = searchTerm ? ` (filtered by "${searchTerm}")` : '';
-                countElement.textContent = `${count} stores found${searchText}`;
+                const searchText = searchTerm ? ` ${t(this.options.language, 'filteredBy')} "${searchTerm}"` : '';
+                countElement.textContent = `${count} ${t(this.options.language, 'storesFound')}${searchText}`;
             }
         }
         
@@ -765,15 +836,15 @@
                         });
                         
                         const userMarker = L.marker([lat, lng], { icon: userIcon })
-                            .bindPopup('Your Location')
+                            .bindPopup(t(this.options.language, 'yourLocation'))
                             .addTo(this.map);
                     },
                     (error) => {
-                        alert('Unable to get your location: ' + error.message);
+                        alert(`${t(this.options.language, 'locationError')}${error.message}`);
                     }
                 );
             } else {
-                alert('Geolocation is not supported by this browser.');
+                alert(t(this.options.language, 'geolocationNotSupported'));
             }
         }
         
@@ -785,6 +856,69 @@
         // Theme management
         getTheme() {
             return this.currentTheme;
+        }
+        
+        // Language management
+        setLanguage(lang) {
+            if (lang !== 'en' && lang !== 'fr') {
+                console.warn('Invalid language. Must be "en" or "fr"');
+                return;
+            }
+            
+            this.options.language = lang;
+            this.refreshUI();
+        }
+        
+        getLanguage() {
+            return this.options.language;
+        }
+        
+        refreshUI() {
+            // Recreate HTML with new language
+            this.createHTML();
+            
+            // Update existing elements
+            this.updateStoreCount(this.allStores.length);
+            
+            // Update theme button
+            const themeBtn = document.getElementById(this.uniqueId + '_themeBtn');
+            if (themeBtn) {
+                if (this.currentTheme === 'dark') {
+                    themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i> ' + t(this.options.language, 'lightMode');
+                } else {
+                    themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i> ' + t(this.options.language, 'darkMode');
+                }
+            }
+            
+            // Update search input placeholder
+            const searchInput = document.getElementById(this.uniqueId + '_search');
+            if (searchInput) {
+                searchInput.placeholder = t(this.options.language, 'searchPlaceholder');
+            }
+            
+            // Update buttons
+            const searchBtn = document.getElementById(this.uniqueId + '_searchBtn');
+            if (searchBtn) {
+                searchBtn.textContent = t(this.options.language, 'searchButton');
+            }
+            
+            const clearBtn = document.getElementById(this.uniqueId + '_clearBtn');
+            if (clearBtn) {
+                clearBtn.textContent = t(this.options.language, 'clearButton');
+            }
+            
+            const locateBtn = document.getElementById(this.uniqueId + '_locateBtn');
+            if (locateBtn) {
+                locateBtn.textContent = t(this.options.language, 'locateButton');
+            }
+            
+            // Update attribution
+            const poweredBy = this.container.querySelector('.powered-by');
+            if (poweredBy) {
+                poweredBy.innerHTML = `
+                    ${t(this.options.language, 'poweredBy')} <a href="https://weedcrawler.ca" target="_blank" rel="noopener">${t(this.options.language, 'weedCrawlerTitle')}</a>
+                `;
+            }
         }
         
         async fetchFromAPI(apiUrl) {
@@ -802,7 +936,7 @@
                 return transformedStores;
             } catch (error) {
                 console.error('Error fetching store data:', error);
-                this.showError('Failed to load store data. Please try again later.');
+                this.showError(t(this.options.language, 'failedToLoadData'));
                 return [];
             }
         }
@@ -854,19 +988,11 @@
     
     // Static factory methods
     CannabisStoreMap.create = function(containerId, storesData = [], options = {}) {
-        // Load dependencies
-        loadFontAwesome();
-        injectCSS();
-        
         // Create and return new instance
         return new CannabisStoreMap(containerId, storesData, options);
     };
     
     CannabisStoreMap.createFromAPI = function(containerId, apiUrl, options = {}) {
-        // Load dependencies
-        loadFontAwesome();
-        injectCSS();
-        
         // Create instance and fetch data from API
         const instance = new CannabisStoreMap(containerId, [], options);
         
