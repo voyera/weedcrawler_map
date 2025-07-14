@@ -28,7 +28,7 @@ The easiest way to integrate the map is using our CDN:
 <body>
     <div id="map-container" style="width: 100%; height: 500px;"></div>
     
-    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js"></script>
     <script>
         const map = CannabisStoreMap.createFromAPI(
             'map-container',
@@ -50,11 +50,11 @@ The easiest way to integrate the map is using our CDN:
 
 ### Local Installation
 
-1. Download the `cannabis-store-map.1.1.0.js` file
+1. Download the `cannabis-store-map.js` file
 2. Include it in your HTML:
 
 ```html
-<script src="cannabis-store-map.1.1.0.js"></script>
+<script src="cannabis-store-map.js"></script>
 ```
 
 ## API Reference
@@ -114,7 +114,7 @@ const language = map.getLanguage(); // returns 'en' or 'fr'
 ```html
 <div id="my-map" style="width: 100%; height: 600px;"></div>
 
-<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js"></script>
 <script>
     const map = CannabisStoreMap.createFromAPI(
         'my-map',
@@ -156,7 +156,7 @@ console.log('Current theme:', theme);
 ```html
 <div id="french-map" style="width: 100%; height: 600px;"></div>
 
-<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js"></script>
 <script>
     const frenchMap = CannabisStoreMap.createFromAPI(
         'french-map',
@@ -215,4 +215,4 @@ For questions or support, please visit [WeedCrawler](https://weedcrawler.ca) or 
 
 ---
 
-**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.js` 
+**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js` 
