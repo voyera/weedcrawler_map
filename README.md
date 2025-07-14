@@ -1,11 +1,12 @@
 # WeedCrawler Cannabis Store Map
 
-🌿 An interactive, responsive cannabis store locator map with dark/light mode support, built for easy integration into any website.
+🌿 An interactive, responsive cannabis store locator map with dark/light mode support and internationalization (English/French), built for easy integration into any website.
 
 ## Features
 
 - **Interactive Store Locator**: Find cannabis stores near you with an intuitive map interface
 - **Dark/Light Mode**: Toggle between themes with automatic UI adaptation
+- **Internationalization**: Full English and French language support
 - **Responsive Design**: Mobile-first approach with touch-optimized controls
 - **Province Filtering**: Filter stores by Canadian provinces
 - **Theme Persistence**: Theme preference is maintained during the session
@@ -27,7 +28,7 @@ The easiest way to integrate the map is using our CDN:
 <body>
     <div id="map-container" style="width: 100%; height: 500px;"></div>
     
-    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.0.0/cannabis-store-map.1.0.0.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.1.1.0.js"></script>
     <script>
         const map = CannabisStoreMap.createFromAPI(
             'map-container',
@@ -38,7 +39,8 @@ The easiest way to integrate the map is using our CDN:
                 zoom: 6,
                 provinces: ['ON'],
                 theme: 'light',
-                showThemeToggle: true
+                showThemeToggle: true,
+                language: 'en' // 'en' for English, 'fr' for French
             }
         );
     </script>
@@ -48,11 +50,11 @@ The easiest way to integrate the map is using our CDN:
 
 ### Local Installation
 
-1. Download the `cannabis-store-map.1.0.0.js` file
+1. Download the `cannabis-store-map.1.1.0.js` file
 2. Include it in your HTML:
 
 ```html
-<script src="cannabis-store-map.1.0.0.js"></script>
+<script src="cannabis-store-map.1.1.0.js"></script>
 ```
 
 ## API Reference
@@ -71,35 +73,38 @@ Creates a new map instance with store data from the WeedCrawler API.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `title` | string | 'Cannabis Store Locator' | Map title displayed in the header |
+| `title` | string | Auto-translated | Map title displayed in the header |
 | `height` | string | '400px' | Map container height |
 | `zoom` | number | 6 | Initial zoom level |
 | `provinces` | array | ['ON'] | Array of province codes to filter stores |
 | `center` | array | [43.6532, -79.3832] | Initial map center coordinates [lat, lng] |
 | `theme` | string | 'light' | Initial theme ('light' or 'dark') |
 | `showThemeToggle` | boolean | true | Whether to show the theme toggle button |
+| `language` | string | 'en' | Interface language ('en' for English, 'fr' for French) |
 
 ### Map Instance Methods
 
-#### setTheme(theme)
-Changes the map theme.
+#### Theme Management
 
 ```javascript
+// Set specific theme
 map.setTheme('dark'); // or 'light'
-```
 
-#### toggleTheme()
-Toggles between light and dark themes.
-
-```javascript
+// Toggle theme
 map.toggleTheme();
+
+// Get current theme
+const theme = map.getTheme(); // returns 'light' or 'dark'
 ```
 
-#### getTheme()
-Returns the current theme.
+#### Language Management
 
 ```javascript
-const currentTheme = map.getTheme(); // returns 'light' or 'dark'
+// Set language
+map.setLanguage('fr'); // or 'en'
+
+// Get current language
+const language = map.getLanguage(); // returns 'en' or 'fr'
 ```
 
 ## Examples
@@ -109,7 +114,7 @@ const currentTheme = map.getTheme(); // returns 'light' or 'dark'
 ```html
 <div id="my-map" style="width: 100%; height: 600px;"></div>
 
-<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.0.0/cannabis-store-map.1.0.0.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.1.1.0.js"></script>
 <script>
     const map = CannabisStoreMap.createFromAPI(
         'my-map',
@@ -118,15 +123,23 @@ const currentTheme = map.getTheme(); // returns 'light' or 'dark'
             title: 'My Cannabis Store Map',
             zoom: 8,
             provinces: ['ON', 'BC'],
-            theme: 'dark'
+            theme: 'dark',
+            language: 'fr'
         }
     );
 </script>
 ```
 
-### Programmatic Theme Control
+### Programmatic Language Control
 
 ```javascript
+// Set specific language
+map.setLanguage('fr');
+
+// Get current language
+const language = map.getLanguage();
+console.log('Current language:', language);
+
 // Set specific theme
 map.setTheme('dark');
 
@@ -137,6 +150,38 @@ map.toggleTheme();
 const theme = map.getTheme();
 console.log('Current theme:', theme);
 ```
+
+### French Language Example
+
+```html
+<div id="french-map" style="width: 100%; height: 600px;"></div>
+
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.1.1.0.js"></script>
+<script>
+    const frenchMap = CannabisStoreMap.createFromAPI(
+        'french-map',
+        'https://api.weedcrawler.ca/map/3f84ee30001a0a00f99945627b604bab0383abee5232f732',
+        {
+            title: 'Localisateur de Magasins de Cannabis',
+            language: 'fr',
+            provinces: ['QC', 'ON'],
+            theme: 'light'
+        }
+    );
+</script>
+```
+
+## Supported Languages
+
+### English (en)
+- Default language
+- All UI elements, buttons, and messages in English
+- Default titles and placeholders
+
+### French (fr)
+- Complete French translation
+- All UI elements, buttons, and messages in French
+- French-specific titles and placeholders
 
 ## Demo
 
@@ -170,4 +215,4 @@ For questions or support, please visit [WeedCrawler](https://weedcrawler.ca) or 
 
 ---
 
-**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.0.0/cannabis-store-map.1.0.0.js` 
+**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.1.1.0.js` 
