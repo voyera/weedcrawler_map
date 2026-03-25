@@ -8,6 +8,7 @@
 - **Dark/Light Mode**: Toggle between themes with automatic UI adaptation
 - **Internationalization**: Full English and French language support
 - **Responsive Design**: Mobile-first approach with touch-optimized controls
+- **Marker Clustering**: Automatically groups nearby markers when zoomed out for cleaner map display
 - **Province Filtering**: Filter stores by Canadian provinces
 - **Theme Persistence**: Theme preference is maintained during the session
 - **Easy Integration**: Simple JavaScript API for quick setup
@@ -28,7 +29,7 @@ The easiest way to integrate the map is using our CDN:
 <body>
     <div id="map-container" style="width: 100%; height: 500px;"></div>
     
-    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js"></script>
     <script>
         const map = CannabisStoreMap.createFromAPI(
             'map-container',
@@ -81,6 +82,10 @@ Creates a new map instance with store data from the WeedCrawler API.
 | `theme` | string | 'light' | Initial theme ('light' or 'dark') |
 | `showThemeToggle` | boolean | true | Whether to show the theme toggle button |
 | `language` | string | 'en' | Interface language ('en' for English, 'fr' for French) |
+| `clustering` | boolean | true | Enable marker clustering (groups nearby markers when zoomed out) |
+| `clusterRadius` | number | 50 | Pixel radius for grouping markers into clusters |
+| `disableClusteringAtZoom` | number | 15 | Zoom level at which individual markers always show |
+| `spiderfyOnMaxZoom` | boolean | true | Spread overlapping markers in a spiral at max zoom |
 
 ### Map Instance Methods
 
@@ -114,7 +119,7 @@ const language = map.getLanguage(); // returns 'en' or 'fr'
 ```html
 <div id="my-map" style="width: 100%; height: 600px;"></div>
 
-<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js"></script>
 <script>
     const map = CannabisStoreMap.createFromAPI(
         'my-map',
@@ -156,7 +161,7 @@ console.log('Current theme:', theme);
 ```html
 <div id="french-map" style="width: 100%; height: 600px;"></div>
 
-<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js"></script>
 <script>
     const frenchMap = CannabisStoreMap.createFromAPI(
         'french-map',
@@ -215,4 +220,4 @@ For questions or support, please visit [WeedCrawler](https://weedcrawler.ca) or 
 
 ---
 
-**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.1.0/cannabis-store-map.min.js` 
+**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js` 

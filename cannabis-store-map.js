@@ -6,7 +6,7 @@
  * 1. Include this script in your HTML
  * 2. Call: CannabisStoreMap.create('container-id', storesData, options)
  * 
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 (function(window, document) {
@@ -96,6 +96,29 @@
         leafletJS.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
         leafletJS.onload = callback;
         document.head.appendChild(leafletJS);
+    }
+    
+    // Load Leaflet.markercluster plugin after Leaflet is available
+    function loadMarkerCluster(callback) {
+        if (typeof L !== 'undefined' && typeof L.markerClusterGroup === 'function') {
+            callback();
+            return;
+        }
+        
+        const clusterCSS = document.createElement('link');
+        clusterCSS.rel = 'stylesheet';
+        clusterCSS.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
+        document.head.appendChild(clusterCSS);
+        
+        const clusterDefaultCSS = document.createElement('link');
+        clusterDefaultCSS.rel = 'stylesheet';
+        clusterDefaultCSS.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css';
+        document.head.appendChild(clusterDefaultCSS);
+        
+        const clusterJS = document.createElement('script');
+        clusterJS.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';
+        clusterJS.onload = callback;
+        document.head.appendChild(clusterJS);
     }
     
     // Load Font Awesome if not already loaded
@@ -383,6 +406,65 @@
             .cannabis-store-map.dark-theme .leaflet-popup-close-button:hover {
                 color: var(--csm-link-color) !important;
             }
+            
+            /* Marker cluster icons */
+            .csm-custom-cluster-icon {
+                background: transparent;
+            }
+            
+            .csm-cluster-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                font-weight: 600;
+                color: white;
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+                transition: transform 0.2s ease;
+                cursor: pointer;
+            }
+            
+            .csm-cluster-icon:hover {
+                transform: scale(1.1);
+            }
+            
+            .csm-cluster-icon span {
+                font-size: 14px;
+                font-family: Arial, sans-serif;
+            }
+            
+            .csm-cluster-small {
+                width: 36px;
+                height: 36px;
+                background: var(--csm-link-color, #4CAF50);
+                border: 3px solid white;
+            }
+            
+            .csm-cluster-medium {
+                width: 44px;
+                height: 44px;
+                background: var(--csm-link-color, #4CAF50);
+                border: 3px solid white;
+            }
+            
+            .csm-cluster-medium span {
+                font-size: 15px;
+            }
+            
+            .csm-cluster-large {
+                width: 52px;
+                height: 52px;
+                background: #388E3C;
+                border: 4px solid white;
+            }
+            
+            .csm-cluster-large span {
+                font-size: 16px;
+            }
+            
+            .cannabis-store-map.dark-theme .csm-cluster-large {
+                background: #2E7D32;
+            }
         `;
         
         const style = document.createElement('style');
@@ -410,11 +492,16 @@
                 theme: 'light', // 'light' or 'dark'
                 showThemeToggle: true, // Show theme toggle button
                 language: 'en', // 'en' or 'fr'
+                clustering: true,
+                clusterRadius: 50,
+                disableClusteringAtZoom: 15,
+                spiderfyOnMaxZoom: true,
                 ...options
             };
             
             this.map = null;
             this.markers = [];
+            this.markerClusterGroup = null;
             this.allStores = [];
             this.currentPopup = null;
             this.uniqueId = 'csm_' + Date.now();
@@ -478,9 +565,17 @@
         
         loadLeafletAndInit() {
             loadLeaflet(() => {
-                this.initMap();
-                this.setupEventListeners();
-                this.loadStores(this.storesData);
+                const afterDeps = () => {
+                    this.initMap();
+                    this.setupEventListeners();
+                    this.loadStores(this.storesData);
+                };
+                
+                if (this.options.clustering) {
+                    loadMarkerCluster(afterDeps);
+                } else {
+                    afterDeps();
+                }
             });
         }
         
@@ -648,14 +743,34 @@
             this.updateStoreCount(filteredStores.length);
             
             if (filteredStores.length > 0) {
-                const group = new L.featureGroup(this.markers);
-                this.map.fitBounds(group.getBounds().pad(0.1));
+                this.fitMapToMarkers();
             }
         }
         
         addMarkers(stores) {
+            if (this.options.clustering && typeof L.markerClusterGroup === 'function') {
+                this.markerClusterGroup = L.markerClusterGroup({
+                    maxClusterRadius: this.options.clusterRadius,
+                    spiderfyOnMaxZoom: this.options.spiderfyOnMaxZoom,
+                    showCoverageOnHover: false,
+                    zoomToBoundsOnClick: true,
+                    disableClusteringAtZoom: this.options.disableClusteringAtZoom,
+                    iconCreateFunction: (cluster) => {
+                        const count = cluster.getChildCount();
+                        let size = 'small';
+                        if (count > 20) size = 'large';
+                        else if (count > 10) size = 'medium';
+                        
+                        return L.divIcon({
+                            html: `<div class="csm-cluster-icon csm-cluster-${size}"><span>${count}</span></div>`,
+                            className: 'csm-custom-cluster-icon',
+                            iconSize: L.point(40, 40)
+                        });
+                    }
+                });
+            }
+            
             stores.forEach(store => {
-                // Skip stores with missing or invalid coordinates
                 if (store.lat === undefined || store.lat === null || store.lat === 0 ||
                     store.lng === undefined || store.lng === null || store.lng === 0) {
                     console.warn(`Skipping store "${store.name}" - missing or invalid coordinates (lat: ${store.lat}, lng: ${store.lng})`);
@@ -671,11 +786,20 @@
                 });
                 
                 const marker = L.marker([store.lat, store.lng], { icon: customIcon })
-                    .bindPopup(this.createPopupContent(store))
-                    .addTo(this.map);
+                    .bindPopup(this.createPopupContent(store));
+                
+                if (this.markerClusterGroup) {
+                    this.markerClusterGroup.addLayer(marker);
+                } else {
+                    marker.addTo(this.map);
+                }
                 
                 this.markers.push(marker);
             });
+            
+            if (this.markerClusterGroup) {
+                this.map.addLayer(this.markerClusterGroup);
+            }
         }
         
         createPopupContent(store) {
@@ -768,8 +892,7 @@
             this.updateStoreCount(filteredStores.length, searchTerm);
             
             if (filteredStores.length > 0) {
-                const group = new L.featureGroup(this.markers);
-                this.map.fitBounds(group.getBounds().pad(0.1));
+                this.fitMapToMarkers();
             }
         }
         
@@ -788,8 +911,7 @@
             this.updateStoreCount(filteredStores.length);
             
             if (filteredStores.length > 0) {
-                const group = new L.featureGroup(this.markers);
-                this.map.fitBounds(group.getBounds().pad(0.1));
+                this.fitMapToMarkers();
             }
         }
         
@@ -804,10 +926,24 @@
         }
         
         clearMarkers() {
+            if (this.markerClusterGroup) {
+                this.map.removeLayer(this.markerClusterGroup);
+                this.markerClusterGroup.clearLayers();
+                this.markerClusterGroup = null;
+            }
             this.markers.forEach(marker => {
                 this.map.removeLayer(marker);
             });
             this.markers = [];
+        }
+        
+        fitMapToMarkers() {
+            if (this.markerClusterGroup && this.markerClusterGroup.getLayers().length > 0) {
+                this.map.fitBounds(this.markerClusterGroup.getBounds().pad(0.1));
+            } else if (this.markers.length > 0) {
+                const group = new L.featureGroup(this.markers);
+                this.map.fitBounds(group.getBounds().pad(0.1));
+            }
         }
         
         updateStoreCount(count, searchTerm = '') {
