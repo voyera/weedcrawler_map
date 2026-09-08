@@ -29,7 +29,7 @@ The easiest way to integrate the map is using our CDN:
 <body>
     <div id="map-container" style="width: 100%; height: 500px;"></div>
     
-    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.3.0/cannabis-store-map.min.js"></script>
     <script>
         const map = CannabisStoreMap.createFromAPI(
             'map-container',
@@ -119,7 +119,7 @@ const language = map.getLanguage(); // returns 'en' or 'fr'
 ```html
 <div id="my-map" style="width: 100%; height: 600px;"></div>
 
-<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.3.0/cannabis-store-map.min.js"></script>
 <script>
     const map = CannabisStoreMap.createFromAPI(
         'my-map',
@@ -161,7 +161,7 @@ console.log('Current theme:', theme);
 ```html
 <div id="french-map" style="width: 100%; height: 600px;"></div>
 
-<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.3.0/cannabis-store-map.min.js"></script>
 <script>
     const frenchMap = CannabisStoreMap.createFromAPI(
         'french-map',
@@ -195,6 +195,14 @@ Check out the interactive demo to see all features in action:
 - **Main Demo**: Open `demo.html` in your browser
 - **Simple Example**: Open `index.html` for a basic implementation
 
+## Basemap
+
+Since 1.3.0 the map uses [OpenFreeMap](https://openfreemap.org) vector tiles (Positron for the light theme, Dark for the dark theme) rendered with MapLibre GL through the Leaflet bridge. No API key, no registration and no request limits, free for commercial use.
+
+- The "OpenFreeMap © OpenMapTiles Data from OpenStreetMap" attribution is required and is shown in the map corner. Do not hide it.
+- WebGL is required for vector rendering. When WebGL or the MapLibre scripts are unavailable the map falls back to keyless Esri raster tiles.
+- All dependencies (Leaflet 1.9.4, Leaflet.markercluster 1.5.3, MapLibre GL 5.24.0, maplibre-gl-leaflet 0.1.4, Font Awesome) are loaded on demand from cdnjs/jsDelivr when they are not already present on the page.
+
 ## Browser Support
 
 - Chrome 60+
@@ -220,4 +228,4 @@ For questions or support, please visit [WeedCrawler](https://weedcrawler.ca) or 
 
 ---
 
-**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.2.0/cannabis-store-map.min.js` 
+**CDN Link**: `https://cdn.jsdelivr.net/gh/voyera/weedcrawler_map@1.3.0/cannabis-store-map.min.js` 
