@@ -6,11 +6,36 @@
  * 1. Include this script in your HTML
  * 2. Call: CannabisStoreMap.create('container-id', storesData, options)
  * 
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 (function(window, document) {
     'use strict';
+    
+    // Basemap configuration.
+    // Vector tiles from OpenFreeMap (free, no API key, commercial use allowed) rendered by
+    // MapLibre GL through the Leaflet bridge. Attribution is mandatory and must stay visible.
+    // The raster fallback is only used when WebGL or the MapLibre scripts are unavailable.
+    const BASEMAP = {
+        styles: {
+            light: 'https://tiles.openfreemap.org/styles/positron',
+            dark: 'https://tiles.openfreemap.org/styles/dark'
+        },
+        attribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> '
+            + '© <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> '
+            + 'Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+        rasterFallback: {
+            light: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            dark: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            attribution: 'Tiles © Esri, HERE, Garmin, © OpenStreetMap contributors',
+            maxNativeZoom: 16
+        },
+        cdn: {
+            maplibreJS: 'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.js',
+            maplibreCSS: 'https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.css',
+            leafletBridgeJS: 'https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.min.js'
+        }
+    };
     
     // Translation dictionaries
     const translations = {
@@ -119,6 +144,61 @@
         clusterJS.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';
         clusterJS.onload = callback;
         document.head.appendChild(clusterJS);
+    }
+    
+    // Load MapLibre GL and the Leaflet bridge once per page. Resolves to true when
+    // L.maplibreGL is usable, false when a script failed to load (raster fallback).
+    let mapLibrePromise = null;
+    function loadMapLibre() {
+        if (mapLibrePromise) {
+            return mapLibrePromise;
+        }
+        
+        mapLibrePromise = new Promise((resolve) => {
+            if (typeof L !== 'undefined' && typeof L.maplibreGL === 'function') {
+                resolve(true);
+                return;
+            }
+            
+            if (!document.querySelector('link[href="' + BASEMAP.cdn.maplibreCSS + '"]')) {
+                const maplibreCSS = document.createElement('link');
+                maplibreCSS.rel = 'stylesheet';
+                maplibreCSS.href = BASEMAP.cdn.maplibreCSS;
+                document.head.appendChild(maplibreCSS);
+            }
+            
+            const fail = () => {
+                console.warn('CannabisStoreMap: MapLibre GL could not be loaded, using the raster basemap fallback');
+                resolve(false);
+            };
+            const loadScript = (src, onload) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = onload;
+                script.onerror = fail;
+                document.head.appendChild(script);
+            };
+            const loadBridge = () => loadScript(BASEMAP.cdn.leafletBridgeJS, () => {
+                resolve(typeof L.maplibreGL === 'function');
+            });
+            
+            if (typeof maplibregl !== 'undefined') {
+                loadBridge();
+            } else {
+                loadScript(BASEMAP.cdn.maplibreJS, loadBridge);
+            }
+        });
+        
+        return mapLibrePromise;
+    }
+    
+    function webglSupported() {
+        try {
+            const canvas = document.createElement('canvas');
+            return !!(window.WebGLRenderingContext && (canvas.getContext('webgl2') || canvas.getContext('webgl')));
+        } catch (error) {
+            return false;
+        }
     }
     
     // Load Font Awesome if not already loaded
@@ -570,11 +650,17 @@
                     this.setupEventListeners();
                     this.loadStores(this.storesData);
                 };
+                const afterCluster = () => {
+                    loadMapLibre().then((available) => {
+                        this.vectorBasemap = available && webglSupported();
+                        afterDeps();
+                    });
+                };
                 
                 if (this.options.clustering) {
-                    loadMarkerCluster(afterDeps);
+                    loadMarkerCluster(afterCluster);
                 } else {
-                    afterDeps();
+                    afterCluster();
                 }
             });
         }
@@ -685,44 +771,47 @@
                 return;
             }
             
-            // Remove existing tile layer
+            const theme = this.currentTheme === 'dark' ? 'dark' : 'light';
+            
+            // Theme switch on an existing vector layer: swap the style, keep the WebGL context
+            if (this.currentTileLayer && typeof this.currentTileLayer.getMaplibreMap === 'function') {
+                this.currentTileLayer.getMaplibreMap().setStyle(BASEMAP.styles[theme]);
+                return;
+            }
+            
             if (this.currentTileLayer) {
                 this.map.removeLayer(this.currentTileLayer);
+                this.currentTileLayer = null;
             }
             
-            // Add new tile layer based on theme
-            const tileUrl = this.currentTheme === 'dark' 
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-            
-            const attribution = this.currentTheme === 'dark'
-                ? '© CartoDB'
-                : '© OpenStreetMap contributors';
-            
-            try {
-                const tileLayer = L.tileLayer(tileUrl, {
-                    attribution: attribution,
-                    subdomains: this.currentTheme === 'dark' ? 'abcd' : 'abc'
+            let layer = null;
+            if (this.vectorBasemap) {
+                try {
+                    layer = L.maplibreGL({
+                        style: BASEMAP.styles[theme],
+                        attributionControl: { customAttribution: BASEMAP.attribution }
+                    });
+                } catch (error) {
+                    console.warn('CannabisStoreMap: vector basemap failed, using the raster fallback', error);
+                    this.vectorBasemap = false;
+                }
+            }
+            if (!layer) {
+                layer = L.tileLayer(BASEMAP.rasterFallback[theme], {
+                    attribution: BASEMAP.rasterFallback.attribution,
+                    maxNativeZoom: BASEMAP.rasterFallback.maxNativeZoom
                 });
-                
-                tileLayer.addTo(this.map);
-                
-                // Store reference to current tile layer
-                this.currentTileLayer = tileLayer;
-                
-                // Force map refresh
-                setTimeout(() => {
+            }
+            
+            layer.addTo(this.map);
+            this.currentTileLayer = layer;
+            
+            // Force map refresh
+            setTimeout(() => {
+                if (this.map) {
                     this.map.invalidateSize();
-                }, 100);
-                
-            } catch (error) {
-                // Fallback to default OpenStreetMap tiles
-                const fallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                });
-                fallbackLayer.addTo(this.map);
-                this.currentTileLayer = fallbackLayer;
-            }
+                }
+            }, 100);
         }
         
         updateMapTiles() {
@@ -731,6 +820,13 @@
         
         loadStores(storesData) {
             this.allStores = storesData;
+            
+            // Data can arrive (e.g. from the API) before the map dependencies finished
+            // loading; keep it and let loadLeafletAndInit replay this call once ready.
+            if (!this.map) {
+                this.storesData = storesData;
+                return;
+            }
             
             // Apply province filter if specified
             let filteredStores = storesData;
