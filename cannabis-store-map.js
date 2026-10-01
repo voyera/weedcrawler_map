@@ -6,7 +6,7 @@
  * 1. Include this script in your HTML
  * 2. Call: CannabisStoreMap.create('container-id', storesData, options)
  * 
- * @version 1.3.0
+ * @version 1.4.0
  */
 
 (function(window, document) {
@@ -101,6 +101,32 @@
     function t(lang, key) {
         const langDict = translations[lang] || translations.en;
         return langDict[key] || translations.en[key] || key;
+    }
+
+    // Every store and product field in a popup comes from a scraped third-party
+    // menu, and this widget renders on our clients' own websites -- so none of it
+    // is trusted. Two different contexts need two different escapes (WEE-255):
+    //
+    //   escapeHtml  text interpolated into markup
+    //   safeUrl     a value used as an href. Escaping alone is not enough there:
+    //               a scraped "javascript:..." field is perfectly valid HTML and
+    //               would execute on the embedder's page, so the protocol is
+    //               allowlisted before the value is ever written into an href.
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function safeUrl(value) {
+        if (!value) return null;
+        const raw = String(value).trim();
+        if (!/^https?:\/\//i.test(raw)) return null;
+        return escapeHtml(raw);
     }
     
     // Check if Leaflet is loaded, if not, load it
@@ -901,8 +927,8 @@
         createPopupContent(store) {
             let popupHTML = `
                 <div class="custom-popup">
-                    <div class="popup-title">${store.name}</div>
-                    ${store.address ? `<div style="margin-bottom: 8px; font-size: 13px; color: var(--csm-secondary-text);">${store.address}</div>` : ''}
+                    <div class="popup-title">${escapeHtml(store.name)}</div>
+                    ${store.address ? `<div style="margin-bottom: 8px; font-size: 13px; color: var(--csm-secondary-text);">${escapeHtml(store.address)}</div>` : ''}
             `;
             
             // Add products section if products exist
@@ -920,17 +946,20 @@
                 previewProducts.forEach(product => {
                     const productContent = `
                         <div style="font-size: 11px; margin-bottom: 4px; padding: 2px 0; word-wrap: break-word; overflow-wrap: break-word; width: 100%; box-sizing: border-box;">
-                            <div style="font-weight: 500; color: var(--csm-popup-text); word-break: break-word; line-height: 1.3;">${product.name}</div>
+                            <div style="font-weight: 500; color: var(--csm-popup-text); word-break: break-word; line-height: 1.3;">${escapeHtml(product.name)}</div>
                             <div style="color: var(--csm-secondary-text); font-size: 10px; word-break: break-word; line-height: 1.2;">
-                                ${product.brand} • ${product.title} • $${parseFloat(product.price).toFixed(2)}
+                                ${escapeHtml(product.brand)} • ${escapeHtml(product.title)} • $${parseFloat(product.price).toFixed(2)}
                             </div>
                         </div>
                     `;
                     
-                    // Make product clickable if URL is available
-                    if (product.url) {
+                    // Make product clickable if it has a usable URL. safeUrl returns
+                    // null for anything that is not http(s), so a hostile value
+                    // degrades to plain text rather than becoming a link.
+                    const productUrl = safeUrl(product.url);
+                    if (productUrl) {
                         popupHTML += `
-                            <a href="${product.url}" target="_blank" style="text-decoration: none; display: block; word-wrap: break-word; width: 100%; box-sizing: border-box;">
+                            <a href="${productUrl}" target="_blank" rel="noopener noreferrer nofollow" style="text-decoration: none; display: block; word-wrap: break-word; width: 100%; box-sizing: border-box;">
                                 ${productContent}
                             </a>
                         `;
@@ -955,8 +984,9 @@
             }
             
             // Add store link
-            if (store.url) {
-                popupHTML += `<a href="${store.url}" target="_blank" class="popup-link">${t(this.options.language, 'visitStore')}</a>`;
+            const storeUrl = safeUrl(store.url);
+            if (storeUrl) {
+                popupHTML += `<a href="${storeUrl}" target="_blank" rel="noopener noreferrer nofollow" class="popup-link">${t(this.options.language, 'visitStore')}</a>`;
             }
             
             popupHTML += `</div>`;
